@@ -33,6 +33,12 @@ function login_user($username, $password, $conn) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['profile_image'] = $user['profile_image'];
+            $_SESSION['full_name'] = $user['full_name'];
+            $_SESSION['phone'] = $user['phone'];
+            $_SESSION['email'] = $user['email'];
+            $_SESSION['github_link'] = $user['github_link'];
+            $_SESSION['linkedin_link'] = $user['linkedin_link'];
+            $_SESSION['bio'] = $user['bio'];
             return true;
         }
     }
@@ -87,7 +93,7 @@ function send_message($sender_id, $receiver_id, $message, $conn) {
 // Function to get a user's details by their ID
 function get_user($user_id, $conn) {
     $user_id = (int)$user_id; // Ensure the user ID is an integer
-    $result = mysqli_query($conn, "SELECT * FROM users WHERE id = $user_id");
+    $result = mysqli_query($conn, "SELECT id, username, password, profile_image, full_name, phone, email, github_link, linkedin_link, bio FROM users WHERE id = $user_id");
     return mysqli_fetch_assoc($result); // Return the user's details as an associative array
 }
 ?>
