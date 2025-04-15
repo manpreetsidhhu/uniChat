@@ -5,6 +5,12 @@ query for db:
   username VARCHAR(50) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
   profile_image VARCHAR(255),
+  full_name VARCHAR(100),
+  phone VARCHAR(20),
+  email VARCHAR(100),
+  github_link VARCHAR(255),
+  linkedin_link VARCHAR(255),
+  bio TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -17,21 +23,24 @@ CREATE TABLE messages (
   FOREIGN KEY (sender_id) REFERENCES users(id),
   FOREIGN KEY (receiver_id) REFERENCES users(id)
 ); 
+
+
   -->
 <?php
 // Define database connection parameters
+/*
 $host = "localhost:3307";
 $username = "root";
 $password = "mysql@preet2549c1c9";
 $dbname = "chat_website";
+*/
 
-/*
 //for phymyadmin use
 $host = "localhost";
 $username = "root";
 $password = "";
 $dbname = "chat_website";
-*/ 
+
 
 // Establish a connection to the MySQL database
 $conn = mysqli_connect($host, $username, $password, $dbname);
