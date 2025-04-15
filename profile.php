@@ -226,18 +226,6 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                         <button type="submit" name="update_profile" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium transition-transform hover:scale-105 shadow-md hover:shadow-lg transform">Save Changes</button>
                     </form>
-                    
-                    <div class="border-t border-red-200 pt-4 mt-4">
-                        <h3 class="text-lg font-semibold mb-3 text-red-800">Danger Zone</h3>
-                        <form method="post" onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone.');">
-                            <div class="mb-3">
-                                <label class="block mb-2 font-medium text-gray-700">Delete Account</label>
-                                <p class="text-sm text-gray-600 mb-2">Once you delete your account, there is no going back. Please be certain.</p>
-                                <input type="text" name="confirm_delete" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400" placeholder="Type DELETE to confirm">
-                            </div>
-                            <button type="submit" name="delete_account" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium transition-transform hover:scale-105 shadow-md hover:shadow-lg transform">Delete Account</button>
-                        </form>
-                    </div>
                 </div>
                 
                 <div class="animate-slide-up" style="animation-delay: 0.3s">
@@ -257,6 +245,18 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                         <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium transition-transform hover:scale-105 shadow-md hover:shadow-lg transform">Save Changes</button>
                     </form>
+
+                    <div class="border-t border-red-200 pt-4 mt-8">
+                        <h3 class="text-lg font-semibold mb-3 text-red-800">Danger Zone</h3>
+                        <form method="post" onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone.');">
+                            <div class="mb-3">
+                                <label class="block mb-2 font-medium text-gray-700">Delete Account</label>
+                                <p class="text-sm text-gray-600 mb-2">Once you delete your account, there is no going back. Please be certain.</p>
+                                <input type="text" name="confirm_delete" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400" placeholder="Type DELETE to confirm">
+                            </div>
+                            <button type="submit" name="delete_account" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium transition-transform hover:scale-105 shadow-md hover:shadow-lg transform">Delete Account</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
