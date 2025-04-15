@@ -28,18 +28,16 @@ CREATE TABLE messages (
   -->
 <?php
 // Define database connection parameters
-/*
 $host = "localhost:3307";
 $username = "root";
 $password = "mysql@preet2549c1c9";
 $dbname = "chat_website";
-*/
 
 //for phymyadmin use
-$host = "localhost";
-$username = "root";
-$password = "";
-$dbname = "chat_website";
+// $host = "localhost";
+// $username = "root";
+// $password = "";
+// $dbname = "chat_website";
 
 
 // Establish a connection to the MySQL database

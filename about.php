@@ -29,7 +29,7 @@ $team_members = [
         'role' => 'Full Stack Developer',
         'image' => 'https://avatars.githubusercontent.com/u/127300897?v=4',
         'linkedin' => 'https://linkedin.com/in/manpreetsinghsidhu',
-        'github' => 'https://github.com/msidhu1',
+        'github' => 'https://github.com/manpreetsidhhu',
         'portfolio' => 'https://manpreetsidhu.me',
         'bio' => 'Manpreet is a detail-oriented Full Stack Developer with a focus on creating efficient and maintainable code. He has a strong foundation in web development fundamentals and stays current with emerging technologies.',
         'education' => [

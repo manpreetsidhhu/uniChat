@@ -48,7 +48,7 @@ function login_user($username, $password, $conn) {
 // Function to get all users except the current user
 function get_users($conn) {
     $current_user = $_SESSION['user_id']; // Current logged-in user's ID
-    $query = "SELECT id, username, profile_image FROM users WHERE id != $current_user";
+    $query = "SELECT id, username, profile_image, full_name FROM users WHERE id != $current_user";
     $result = mysqli_query($conn, $query);
     
     // Fetch all users and return them as an array
@@ -95,5 +95,51 @@ function get_user($user_id, $conn) {
     $user_id = (int)$user_id; // Ensure the user ID is an integer
     $result = mysqli_query($conn, "SELECT id, username, password, profile_image, full_name, phone, email, github_link, linkedin_link, bio FROM users WHERE id = $user_id");
     return mysqli_fetch_assoc($result); // Return the user's details as an associative array
+}
+
+// Function to clear chat history between two users
+function clear_chat($user_id, $receiver_id, $conn) {
+    $user_id = (int)$user_id; // Ensure user ID is an integer
+    $receiver_id = (int)$receiver_id; // Ensure receiver ID is an integer
+    
+    // Delete all messages between the two users
+    $query = "DELETE FROM messages 
+              WHERE (sender_id = $user_id AND receiver_id = $receiver_id) 
+              OR (sender_id = $receiver_id AND receiver_id = $user_id)";
+    
+    // Return true if the query is successful, otherwise false
+    return mysqli_query($conn, $query);
+}
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+    // Get the contents of the request
+    $json_data = file_get_contents('php://input');
+    $data = json_decode($json_data, true);
+    
+    // Check if this is a clear chat request
+    if (isset($data['action']) && $data['action'] === 'clear_chat') {
+        // Include database connection
+        require_once 'db.php';
+        
+        // Ensure user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Not authenticated']);
+            exit;
+        }
+        
+        // Verify the user ID matches the logged-in user
+        if ($_SESSION['user_id'] != $data['user_id']) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            exit;
+        }
+        
+        // Clear the chat
+        $success = clear_chat($data['user_id'], $data['receiver_id'], $conn);
+        
+        // Return the result
+        echo json_encode(['success' => $success]);
+        exit;
+    }
 }
 ?>

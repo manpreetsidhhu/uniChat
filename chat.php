@@ -233,10 +233,6 @@ if (isset($_POST['send_message']) && $selected_user) {
             transition: all 0.2s ease;
         }
 
-        .user-item:hover {
-            transform: translateX(5px);
-        }
-
         /* Message send animation */
         @keyframes sendMessage {
             0% {
@@ -340,13 +336,27 @@ if (isset($_POST['send_message']) && $selected_user) {
         <!-- Chat area -->
         <div class="flex-1 flex flex-col">
             <?php if ($selected_user): ?>
-                <div class="bg-white p-3 border-b flex items-center rounded-t-lg px-4">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold mr-3">
-                        <?php echo strtoupper(substr($selected_user['username'], 0, 1)); ?>
+                <div class="bg-white p-3 border-b flex items-center justify-between rounded-t-lg px-4">
+                    <div class="flex items-center">
+                        <?php if (!empty($selected_user['profile_image'])): ?>
+                            <img src="<?php echo $selected_user['profile_image']; ?>" class="w-10 h-10 rounded-full mr-3 object-cover">
+                        <?php else: ?>
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold mr-3">
+                                <?php echo strtoupper(substr($selected_user['username'], 0, 1)); ?>
+                            </div>
+                        <?php endif; ?>
+                        <div>
+                            <h2 class="font-semibold">
+                                <?php echo !empty($selected_user['full_name']) ? htmlspecialchars($selected_user['full_name']) : htmlspecialchars($selected_user['username']); ?>
+                            </h2>
+                            <div class="text-xs text-gray-500">
+                                (@<?php echo htmlspecialchars($selected_user['username']); ?>)
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <h2 class="font-semibold"><?php echo htmlspecialchars($selected_user['username']); ?></h2>
-                    </div>
+                    <button id="clearChatBtn" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm flex items-center">
+                        <i class="fas fa-trash-alt mr-1"></i> Clear Chat
+                    </button>
                 </div>
 
                 <div class="flex-1 p-4 px-5 overflow-y-auto bg-gray-50" id="messages-container">
@@ -374,9 +384,13 @@ if (isset($_POST['send_message']) && $selected_user) {
                             ?>
                                 <div class="flex <?php echo $is_my_message ? 'justify-end' : 'justify-start'; ?>" data-message-id="<?php echo $message['id']; ?>">
                                     <?php if (!$is_my_message): ?>
-                                        <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold mr-2 self-end">
-                                            <?php echo strtoupper(substr($selected_user['username'], 0, 1)); ?>
-                                        </div>
+                                        <?php if (!empty($selected_user['profile_image'])): ?>
+                                            <img src="<?php echo $selected_user['profile_image']; ?>" class="w-8 h-8 rounded-full mr-2 self-end object-cover">
+                                        <?php else: ?>
+                                            <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold mr-2 self-end">
+                                                <?php echo strtoupper(substr($selected_user['username'], 0, 1)); ?>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                     <div class="message-bubble <?php echo $is_my_message ? 'bg-indigo-600 text-white' : 'bg-blue-100 text-gray-800'; ?> rounded-2xl px-4 py-2 mb-2 max-w-xs shadow-sm">
                                         <p><?php echo nl2br(htmlspecialchars($message['message'])); ?></p>
@@ -655,9 +669,50 @@ if (isset($_POST['send_message']) && $selected_user) {
             });
         }
 
+        // Clear Chat functionality
+        const clearChatBtn = document.getElementById('clearChatBtn');
+        if (clearChatBtn) {
+            clearChatBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear this chat? This action cannot be undone.')) {
+                    // Send request to clear chat
+                    fetch('functions.php', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'clear_chat',
+                            user_id: currentUserId,
+                            receiver_id: receiverId
+                        }),
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }).then(response => response.json())
+                      .then(data => {
+                          if (data.success) {
+                              // Clear messages container
+                              messagesContainer.innerHTML = `
+                                <div class="text-center py-20">
+                                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 text-indigo-500 mb-4">
+                                        <i class="fas fa-comment-dots text-2xl"></i>
+                                    </div>
+                                    <p class="text-gray-600">Chat cleared. Start a new conversation!</p>
+                                </div>
+                              `;
+                              messageCount = 0;
+                          } else {
+                              alert('Failed to clear chat. Please try again.');
+                          }
+                      })
+                      .catch(error => {
+                          console.error('Error:', error);
+                          alert('An error occurred while clearing the chat.');
+                      });
+                }
+            });
+        }
+
         // Check for new messages
         let messageCount = <?php echo count($messages); ?>;
-
 
         function checkNewMessages() {
             fetch('chat.php?user=' + receiverId)
