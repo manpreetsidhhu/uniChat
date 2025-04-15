@@ -26,6 +26,7 @@ if (isset($_GET['logout'])) {
 // Initialize variables for selected user and messages
 $selected_user = null;
 $messages = [];
+$viewed_user = null;
 
 // Check if a user is selected for chat
 if (isset($_GET['user'])) {
@@ -41,6 +42,12 @@ if (isset($_GET['user'])) {
     if ($selected_user) {
         $messages = get_messages($current_user_id, $receiver_id, $conn);
     }
+}
+
+// Handle viewing user details
+if (isset($_GET['view_user'])) {
+    $view_user_id = (int)$_GET['view_user'];
+    $viewed_user = get_user($view_user_id, $conn);
 }
 
 // Handle sending a new message
@@ -303,24 +310,31 @@ if (isset($_POST['send_message']) && $selected_user) {
                     <input type="text" id="user-search" placeholder="Search..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
                 </div>
             </div>
-            <ul class="users-list px-2">
-                <?php foreach ($users as $user): ?>
-                    <li class="user-item" data-username="<?php echo strtolower($user['username']); ?>">
-                        <a href="?user=<?php echo $user['id']; ?>" class="flex items-center p-3 border-b hover:bg-indigo-50 rounded-lg my-1 <?php echo $selected_user && $selected_user['id'] == $user['id'] ? 'bg-indigo-50' : ''; ?>">
-                            <?php if (!empty($user['profile_image'])): ?>
-                                <img src="<?php echo $user['profile_image']; ?>" class="w-10 h-10 rounded-full mr-3 object-cover">
-                            <?php else: ?>
-                                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold mr-3">
-                                    <?php echo strtoupper(substr($user['username'], 0, 1)); ?>
-                                </div>
-                            <?php endif; ?>
-                            <div>
-                                <?php echo htmlspecialchars($user['username']); ?>
+            <div class="flex-1 overflow-y-auto">
+                <ul class="users-list w-full">
+                    <?php foreach ($users as $user): ?>
+                        <li class="user-item w-full" data-username="<?php echo strtolower($user['username']); ?>">
+                            <div class="flex items-center p-3 border-b hover:bg-indigo-50 rounded-lg my-1 <?php echo $selected_user && $selected_user['id'] == $user['id'] ? 'bg-indigo-50' : ''; ?>">
+                                <a href="?user=<?php echo $user['id']; ?>" class="flex-1 flex items-center min-w-0">
+                                    <?php if (!empty($user['profile_image'])): ?>
+                                        <img src="<?php echo $user['profile_image']; ?>" class="w-10 h-10 rounded-full mr-3 object-cover flex-shrink-0">
+                                    <?php else: ?>
+                                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold mr-3 flex-shrink-0">
+                                            <?php echo strtoupper(substr($user['username'], 0, 1)); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="truncate">
+                                        <?php echo htmlspecialchars($user['username']); ?>
+                                    </div>
+                                </a>
+                                <button onclick="window.location.href='?view_user=<?php echo $user['id']; ?>'" class="p-2 text-gray-400 hover:text-indigo-600 flex-shrink-0">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
                             </div>
-                        </a>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
         </div>
 
         <!-- Chat area -->
@@ -418,6 +432,81 @@ if (isset($_POST['send_message']) && $selected_user) {
             <?php endif; ?>
         </div>
     </div>
+
+    <!-- User Details Modal -->
+    <?php if ($viewed_user): ?>
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="userDetailsModal">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 animate-slide-up">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">User Details</h2>
+                <button onclick="document.getElementById('userDetailsModal').remove();" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="text-center mb-6">
+                <?php if (!empty($viewed_user['profile_image'])): ?>
+                    <img src="<?php echo $viewed_user['profile_image']; ?>" alt="<?php echo $viewed_user['username']; ?>" class="w-24 h-24 rounded-full object-cover mx-auto mb-2">
+                <?php else: ?>
+                    <div class="w-24 h-24 rounded-full bg-indigo-100 flex items-center justify-center text-3xl font-bold text-indigo-600 mx-auto mb-2">
+                        <?php echo strtoupper(substr($viewed_user['username'], 0, 1)); ?>
+                    </div>
+                <?php endif; ?>
+                <h3 class="text-lg font-medium text-gray-900">@<?php echo $viewed_user['username']; ?></h3>
+            </div>
+
+            <div class="space-y-4">
+                <?php if (!empty($viewed_user['full_name'])): ?>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                        <p class="mt-1 text-gray-900"><?php echo htmlspecialchars($viewed_user['full_name']); ?></p>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($viewed_user['phone'])): ?>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Phone</label>
+                        <p class="mt-1 text-gray-900"><?php echo htmlspecialchars($viewed_user['phone']); ?></p>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($viewed_user['email'])): ?>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Email</label>
+                        <p class="mt-1 text-gray-900"><?php echo htmlspecialchars($viewed_user['email']); ?></p>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($viewed_user['bio'])): ?>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">About</label>
+                        <p class="mt-1 text-gray-900"><?php echo htmlspecialchars($viewed_user['bio']); ?></p>
+                    </div>
+                <?php endif; ?>
+
+                <div class="flex space-x-4">
+                    <?php if (!empty($viewed_user['github_link'])): ?>
+                        <a href="<?php echo $viewed_user['github_link']; ?>" target="_blank" class="text-gray-600 hover:text-gray-900">
+                            <i class="fab fa-github text-2xl"></i>
+                        </a>
+                    <?php endif; ?>
+
+                    <?php if (!empty($viewed_user['linkedin_link'])): ?>
+                        <a href="<?php echo $viewed_user['linkedin_link']; ?>" target="_blank" class="text-blue-600 hover:text-blue-800">
+                            <i class="fab fa-linkedin text-2xl"></i>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <a href="?user=<?php echo $viewed_user['id']; ?>" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                    Message
+                </a>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <script>
         // Search functionality - always available regardless of chat selection
