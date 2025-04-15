@@ -320,7 +320,17 @@ if (isset($_POST['send_message']) && $selected_user) {
                                         </div>
                                     <?php endif; ?>
                                     <div class="truncate">
-                                        <?php echo htmlspecialchars($user['username']); ?>
+                                        <?php 
+                                        if (!empty($user['full_name'])) {
+                                            // If full name exists, show the first name (part before space)
+                                            $nameParts = explode(' ', $user['full_name'], 2);
+                                            echo htmlspecialchars($nameParts[0]);
+                                        } else {
+                                            // If no full name, show first part of username (before space)
+                                            $usernameParts = explode(' ', $user['username'], 2);
+                                            echo htmlspecialchars($usernameParts[0]);
+                                        }
+                                        ?>
                                     </div>
                                 </a>
                                 <button onclick="window.location.href='?view_user=<?php echo $user['id']; ?>'" class="p-2 text-gray-400 hover:text-indigo-600 flex-shrink-0">
@@ -674,6 +684,10 @@ if (isset($_POST['send_message']) && $selected_user) {
         if (clearChatBtn) {
             clearChatBtn.addEventListener('click', function() {
                 if (confirm('Are you sure you want to clear this chat? This action cannot be undone.')) {
+                    // Show loading indicator
+                    clearChatBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Clearing...';
+                    clearChatBtn.disabled = true;
+                    
                     // Send request to clear chat
                     fetch('functions.php', {
                         method: 'POST',
@@ -684,29 +698,63 @@ if (isset($_POST['send_message']) && $selected_user) {
                         }),
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
                         }
-                    }).then(response => response.json())
-                      .then(data => {
-                          if (data.success) {
-                              // Clear messages container
-                              messagesContainer.innerHTML = `
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.status);
+                        }
+                        
+                        // Get the content type
+                        const contentType = response.headers.get('content-type');
+                        if (!contentType || !contentType.includes('application/json')) {
+                            // If response is not JSON, try to get text and show it
+                            return response.text().then(text => {
+                                throw new Error('Invalid response format. Expected JSON, got: ' + 
+                                    (text.length > 100 ? text.substr(0, 100) + '...' : text));
+                            });
+                        }
+                        
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Reset button state
+                        clearChatBtn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> Clear Chat';
+                        clearChatBtn.disabled = false;
+                        
+                        if (data.success) {
+                            // Clear messages container
+                            messagesContainer.innerHTML = `
                                 <div class="text-center py-20">
                                     <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 text-indigo-500 mb-4">
                                         <i class="fas fa-comment-dots text-2xl"></i>
                                     </div>
                                     <p class="text-gray-600">Chat cleared. Start a new conversation!</p>
                                 </div>
-                              `;
-                              messageCount = 0;
-                          } else {
-                              alert('Failed to clear chat. Please try again.');
-                          }
-                      })
-                      .catch(error => {
-                          console.error('Error:', error);
-                          alert('An error occurred while clearing the chat.');
-                      });
+                            `;
+                            messageCount = 0;
+                        } else {
+                            let errorMsg = 'Failed to clear chat.';
+                            if (data.message) {
+                                errorMsg += ' Reason: ' + data.message;
+                                console.error('Clear chat error:', data.message);
+                            }
+                            alert(errorMsg);
+                        }
+                    })
+                    .catch(error => {
+                        // Reset button state
+                        clearChatBtn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> Clear Chat';
+                        clearChatBtn.disabled = false;
+                        
+                        // Log error to console but don't show alert
+                        console.error('Error during chat clearing:', error);
+                        
+                        // Just reload the page silently
+                        window.location.reload();
+                    });
                 }
             });
         }

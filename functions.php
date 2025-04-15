@@ -112,15 +112,27 @@ function clear_chat($user_id, $receiver_id, $conn) {
 }
 
 // Handle AJAX requests
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
-    // Get the contents of the request
+// This block handles all incoming AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+    // Prevent any HTML output before JSON response
+    @ob_clean(); // Clean any previous output
+    
+    // Set content type header to JSON
+    header('Content-Type: application/json');
+    
+    // Get raw post data for JSON requests
     $json_data = file_get_contents('php://input');
     $data = json_decode($json_data, true);
     
-    // Check if this is a clear chat request
+    // Debug - log all incoming requests
+    error_log("AJAX Request received: " . print_r($data, true));
+    
+    // Handle clear chat action
     if (isset($data['action']) && $data['action'] === 'clear_chat') {
-        // Include database connection
-        require_once 'db.php';
+        // Include database connection if not already included
+        if (!isset($conn)) {
+            @require_once 'db.php'; // Suppress any warnings
+        }
         
         // Ensure user is logged in
         if (!isset($_SESSION['user_id'])) {
@@ -128,17 +140,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_SERVER['HTTP_X_REQUESTED_W
             exit;
         }
         
-        // Verify the user ID matches the logged-in user
-        if ($_SESSION['user_id'] != $data['user_id']) {
-            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        // Check if required parameters exist
+        if (!isset($data['user_id']) || !isset($data['receiver_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Missing required parameters']);
             exit;
         }
         
-        // Clear the chat
-        $success = clear_chat($data['user_id'], $data['receiver_id'], $conn);
+        // Verify the user ID matches the logged-in user
+        if ((int)$_SESSION['user_id'] !== (int)$data['user_id']) {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized - user ID mismatch']);
+            exit;
+        }
         
-        // Return the result
-        echo json_encode(['success' => $success]);
+        try {
+            // Clear the chat
+            $success = clear_chat($data['user_id'], $data['receiver_id'], $conn);
+            
+            if (!$success) {
+                // Log and return database error
+                $error = mysqli_error($conn);
+                error_log("Database error in clear_chat: " . $error);
+                echo json_encode(['success' => false, 'message' => 'Database error: ' . $error]);
+            } else {
+                // Return success
+                echo json_encode(['success' => true, 'message' => 'Chat cleared successfully']);
+            }
+        } catch (Exception $e) {
+            error_log("Exception in clear_chat: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Server error: ' . $e->getMessage()]);
+        }
         exit;
     }
 }
