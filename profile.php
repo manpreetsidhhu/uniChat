@@ -36,6 +36,54 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
     
+    // Handle profile information update
+    if(isset($_POST['update_profile'])) {
+        $full_name = mysqli_real_escape_string($conn, $_POST['full_name']);
+        $phone = mysqli_real_escape_string($conn, $_POST['phone']);
+        $email = mysqli_real_escape_string($conn, $_POST['email']);
+        $github_link = mysqli_real_escape_string($conn, $_POST['github_link']);
+        $linkedin_link = mysqli_real_escape_string($conn, $_POST['linkedin_link']);
+        $bio = mysqli_real_escape_string($conn, $_POST['bio']);
+        
+        // Validate email
+        if(!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $msg = 'Invalid email format!';
+        }
+        // Validate phone number (basic validation for 10 digits)
+        elseif(!empty($phone) && !preg_match('/^[0-9]{10}$/', $phone)) {
+            $msg = 'Invalid phone number! Please enter 10 digits.';
+        }
+        // Validate social links
+        elseif(!empty($github_link) && !filter_var($github_link, FILTER_VALIDATE_URL)) {
+            $msg = 'Invalid GitHub URL!';
+        }
+        elseif(!empty($linkedin_link) && !filter_var($linkedin_link, FILTER_VALIDATE_URL)) {
+            $msg = 'Invalid LinkedIn URL!';
+        }
+        elseif(!empty($github_link) && !empty($linkedin_link) && $github_link === $linkedin_link) {
+            $msg = 'GitHub and LinkedIn URLs cannot be the same!';
+        }
+        else {
+            // Update the user's profile information
+            $query = "UPDATE users SET 
+                     full_name='$full_name',
+                     phone='$phone',
+                     email='$email',
+                     github_link='$github_link',
+                     linkedin_link='$linkedin_link',
+                     bio='$bio'
+                     WHERE id=$user_id";
+            
+            if(mysqli_query($conn, $query)) {
+                $msg = 'Profile information updated successfully!';
+                // Update the user data in the session
+                $user = get_user($user_id, $conn);
+            } else {
+                $msg = 'Error updating profile information!';
+            }
+        }
+    }
+    
     // Handle password update
     if(isset($_POST['current_pwd']) && isset($_POST['new_pwd'])) {
         $current = $_POST['current_pwd']; // Get the current password
@@ -48,6 +96,29 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             $msg = 'Password updated!'; // Set a success message
         } else {
             $msg = 'Current password incorrect!'; // Set an error message
+        }
+    }
+    
+    // Handle account deletion
+    if(isset($_POST['delete_account'])) {
+        $confirm = $_POST['confirm_delete'];
+        if($confirm === 'DELETE') {
+            // Delete user's profile image if exists
+            if(!empty($user['profile_image']) && file_exists($user['profile_image'])) {
+                unlink($user['profile_image']);
+            }
+            
+            // Delete user's messages
+            mysqli_query($conn, "DELETE FROM messages WHERE sender_id = $user_id OR receiver_id = $user_id");
+            
+            // Delete user account
+            if(mysqli_query($conn, "DELETE FROM users WHERE id = $user_id")) {
+                session_destroy();
+                header("Location: index.php");
+                exit();
+            }
+        } else {
+            $msg = 'Please type DELETE to confirm account deletion';
         }
     }
 }
@@ -119,13 +190,53 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="animate-slide-up" style="animation-delay: 0.2s">
                     <h2 class="text-xl font-semibold mb-4 text-gray-800">Personal Information</h2>
-                    <div class="mb-4">
-                        <label class="block mb-1 font-medium text-gray-700">Full Name</label>
-                        <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 input-focus-effect" placeholder="Enter your full name">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block mb-1 font-medium text-gray-700">Username</label>
-                        <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50" value="<?php echo htmlspecialchars($_SESSION['username']); ?>" readonly>
+                    <form method="post">
+                        <div class="mb-4">
+                            <label class="block mb-1 font-medium text-gray-700">Full Name</label>
+                            <input type="text" name="full_name" value="<?php echo htmlspecialchars($user['full_name'] ?? ''); ?>" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 input-focus-effect" placeholder="Enter your full name">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block mb-1 font-medium text-gray-700">Username</label>
+                            <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50" value="<?php echo htmlspecialchars($_SESSION['username']); ?>" readonly>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block mb-1 font-medium text-gray-700">Phone Number</label>
+                            <input type="text" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 input-focus-effect" placeholder="Enter your phone number">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block mb-1 font-medium text-gray-700">Email</label>
+                            <input type="email" name="email" value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 input-focus-effect" placeholder="Enter your email">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block mb-1 font-medium text-gray-700">About Me</label>
+                            <textarea name="bio" rows="4" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 input-focus-effect" placeholder="Tell us about yourself..."><?php echo htmlspecialchars($user['bio'] ?? ''); ?></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block mb-1 font-medium text-gray-700">Social Links</label>
+                            <div class="space-y-2">
+                                <div class="flex items-center">
+                                    <i class="fab fa-github text-gray-800 mr-2 w-5"></i>
+                                    <input type="url" name="github_link" value="<?php echo htmlspecialchars($user['github_link'] ?? ''); ?>" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 input-focus-effect" placeholder="GitHub profile URL">
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fab fa-linkedin text-blue-700 mr-2 w-5"></i>
+                                    <input type="url" name="linkedin_link" value="<?php echo htmlspecialchars($user['linkedin_link'] ?? ''); ?>" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 input-focus-effect" placeholder="LinkedIn profile URL">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" name="update_profile" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium transition-transform hover:scale-105 shadow-md hover:shadow-lg transform">Save Changes</button>
+                    </form>
+                    
+                    <div class="border-t border-red-200 pt-4 mt-4">
+                        <h3 class="text-lg font-semibold mb-3 text-red-800">Danger Zone</h3>
+                        <form method="post" onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone.');">
+                            <div class="mb-3">
+                                <label class="block mb-2 font-medium text-gray-700">Delete Account</label>
+                                <p class="text-sm text-gray-600 mb-2">Once you delete your account, there is no going back. Please be certain.</p>
+                                <input type="text" name="confirm_delete" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400" placeholder="Type DELETE to confirm">
+                            </div>
+                            <button type="submit" name="delete_account" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium transition-transform hover:scale-105 shadow-md hover:shadow-lg transform">Delete Account</button>
+                        </form>
                     </div>
                 </div>
                 
