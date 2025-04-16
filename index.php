@@ -3,7 +3,7 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// Include database connection and helper functions
+// Include databases connection and helper functions
 require_once 'db.php';
 require_once 'functions.php';
 
