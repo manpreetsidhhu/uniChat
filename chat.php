@@ -414,7 +414,6 @@ if (isset($_POST['send_message']) && $selected_user) {
                         </div>
                     <?php endif; ?>
                 </div>
-
                 <div class="bg-white p-4 px-5 border-t rounded-b-lg">
                     <form method="post" class="flex items-center gap-3">
                         <button type="button" id="extraOptions" class="extra-options-btn">
@@ -646,36 +645,22 @@ if (isset($_POST['send_message']) && $selected_user) {
             });
         }
 
-        // Simple real-time messaging
+        // Define variables needed for chat functionality
         const currentUserId = <?php echo $current_user_id; ?>;
         const receiverId = <?php echo $selected_user['id']; ?>;
 
         // Handle form submission without page refresh
         if (messageForm) {
             messageForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
+                // Do not prevent default form submission
+                // Let the form submit naturally to refresh the page
+                // This removes the AJAX functionality
+                
                 const messageText = messageInput.value.trim();
-                if (!messageText) return;
-
-                const formData = new FormData(this);
-                formData.append('send_message', '1');
-
-                // Send message via fetch API
-                fetch('chat.php?user=' + receiverId, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                }).then(() => {
-                    // Clear input
-                    messageInput.value = '';
-                    messageInput.focus();
-
-                    // Force immediate update
-                    checkNewMessages();
-                });
+                if (!messageText) {
+                    e.preventDefault(); // Only prevent if empty message
+                    return;
+                }
             });
         }
 
@@ -684,77 +669,9 @@ if (isset($_POST['send_message']) && $selected_user) {
         if (clearChatBtn) {
             clearChatBtn.addEventListener('click', function() {
                 if (confirm('Are you sure you want to clear this chat? This action cannot be undone.')) {
-                    // Show loading indicator
-                    clearChatBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Clearing...';
-                    clearChatBtn.disabled = true;
-                    
-                    // Send request to clear chat
-                    fetch('functions.php', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            action: 'clear_chat',
-                            user_id: currentUserId,
-                            receiver_id: receiverId
-                        }),
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json'
-                        }
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok: ' + response.status);
-                        }
-                        
-                        // Get the content type
-                        const contentType = response.headers.get('content-type');
-                        if (!contentType || !contentType.includes('application/json')) {
-                            // If response is not JSON, try to get text and show it
-                            return response.text().then(text => {
-                                throw new Error('Invalid response format. Expected JSON, got: ' + 
-                                    (text.length > 100 ? text.substr(0, 100) + '...' : text));
-                            });
-                        }
-                        
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Reset button state
-                        clearChatBtn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> Clear Chat';
-                        clearChatBtn.disabled = false;
-                        
-                        if (data.success) {
-                            // Clear messages container
-                            messagesContainer.innerHTML = `
-                                <div class="text-center py-20">
-                                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 text-indigo-500 mb-4">
-                                        <i class="fas fa-comment-dots text-2xl"></i>
-                                    </div>
-                                    <p class="text-gray-600">Chat cleared. Start a new conversation!</p>
-                                </div>
-                            `;
-                            messageCount = 0;
-                        } else {
-                            let errorMsg = 'Failed to clear chat.';
-                            if (data.message) {
-                                errorMsg += ' Reason: ' + data.message;
-                                console.error('Clear chat error:', data.message);
-                            }
-                            alert(errorMsg);
-                        }
-                    })
-                    .catch(error => {
-                        // Reset button state
-                        clearChatBtn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> Clear Chat';
-                        clearChatBtn.disabled = false;
-                        
-                        // Log error to console but don't show alert
-                        console.error('Error during chat clearing:', error);
-                        
-                        // Just reload the page silently
-                        window.location.reload();
-                    });
+                    // Redirect to a server-side clear chat function with a return URL
+                    window.location.href = 'functions.php?action=clear_chat&user_id=' + currentUserId + 
+                        '&receiver_id=' + receiverId + '&return_to=chat.php?user=' + receiverId;
                 }
             });
         }
@@ -785,8 +702,8 @@ if (isset($_POST['send_message']) && $selected_user) {
                 });
         }
 
-        // Check for new messages every half second
-        setInterval(checkNewMessages, 500);
+        // Check for new messages every second
+        setInterval(checkNewMessages, 1000);
         <?php endif; ?>
     </script>
 
