@@ -38,16 +38,28 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     // Handle profile information update
     if(isset($_POST['update_profile'])) {
-        $full_name = mysqli_real_escape_string($conn, $_POST['full_name']);
+        $full_name = mysqli_real_escape_string($conn, trim($_POST['full_name']));
         $phone = mysqli_real_escape_string($conn, $_POST['phone']);
         $email = mysqli_real_escape_string($conn, $_POST['email']);
         $github_link = mysqli_real_escape_string($conn, $_POST['github_link']);
         $linkedin_link = mysqli_real_escape_string($conn, $_POST['linkedin_link']);
         $bio = mysqli_real_escape_string($conn, $_POST['bio']);
         
-        // Validate email
-        if(!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $msg = 'Invalid email format!';
+        // Validate full name
+        if(empty($full_name)) {
+            $msg = 'Full name is required!';
+        }
+        // Check name length (2-50 characters)
+        elseif(strlen($full_name) < 2 || strlen($full_name) > 50) {
+            $msg = 'Full name must be between 2 and 50 characters!';
+        }
+        // Check for valid characters (letters, spaces, and basic punctuation)
+        elseif(!preg_match('/^[A-Za-z\s\'\-\.]+$/', $full_name)) {
+            $msg = 'Full name can only contain letters, spaces, and basic punctuation!';
+        }
+        // Check for multiple consecutive spaces
+        elseif(strpos($full_name, '  ') !== false) {
+            $msg = 'Full name cannot contain multiple consecutive spaces!';
         }
         // Validate phone number (basic validation for 10 digits)
         elseif(!empty($phone) && !preg_match('/^[0-9]{10}$/', $phone)) {
@@ -200,7 +212,16 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <form method="post">
                         <div class="mb-4">
                             <label class="block mb-1 font-medium text-gray-700">Full Name</label>
-                            <input type="text" name="full_name" value="<?php echo htmlspecialchars($user['full_name'] ?? ''); ?>" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 input-focus-effect" placeholder="Enter your full name">
+                            <input type="text" 
+                                name="full_name" 
+                                value="<?php echo htmlspecialchars($user['full_name'] ?? ''); ?>" 
+                                class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 input-focus-effect" 
+                                placeholder="Enter your full name"
+                                pattern="^[A-Za-z\s'\-\.]{2,50}$"
+                                required
+                                oninput="validateName(this)"
+                                title="Name must be 2-50 characters long and can only contain letters, spaces, and basic punctuation">
+                            <span id="nameError" class="text-red-500 text-sm hidden"></span>
                         </div>
                         <div class="mb-4">
                             <label class="block mb-1 font-medium text-gray-700">Username</label>
@@ -272,5 +293,44 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
     <footer class="text-center py-4 text-gray-500 text-sm animate-fade-in" style="animation-delay: 0.4s">
         © 2025 uniChat App
     </footer>
+
+    <script>
+        function validateName(input) {
+            const name = input.value.trim();
+            const errorSpan = document.getElementById('nameError');
+            
+            // Check if empty
+            if (!name) {
+                errorSpan.textContent = 'Full name is required!';
+                errorSpan.classList.remove('hidden');
+                return false;
+            }
+            
+            // Check length
+            if (name.length < 2 || name.length > 50) {
+                errorSpan.textContent = 'Full name must be between 2 and 50 characters!';
+                errorSpan.classList.remove('hidden');
+                return false;
+            }
+            
+            // Check for valid characters
+            if (!/^[A-Za-z\s'\-\.]+$/.test(name)) {
+                errorSpan.textContent = 'Full name can only contain letters, spaces, and basic punctuation!';
+                errorSpan.classList.remove('hidden');
+                return false;
+            }
+            
+            // Check for multiple consecutive spaces
+            if (name.includes('  ')) {
+                errorSpan.textContent = 'Full name cannot contain multiple consecutive spaces!';
+                errorSpan.classList.remove('hidden');
+                return false;
+            }
+            
+            // If all validations pass
+            errorSpan.classList.add('hidden');
+            return true;
+        }
+    </script>
 </body>
 </html>
