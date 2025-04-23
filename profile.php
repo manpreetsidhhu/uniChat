@@ -102,7 +102,8 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Handle account deletion
     if(isset($_POST['delete_account'])) {
         $confirm = $_POST['confirm_delete'];
-        if($confirm === 'DELETE') {
+        $expected_text = 'DELETE/' . $_SESSION['username'];
+        if($confirm === $expected_text) {
             // Delete user's profile image if exists
             if(!empty($user['profile_image']) && file_exists($user['profile_image'])) {
                 unlink($user['profile_image']);
@@ -118,7 +119,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                 exit();
             }
         } else {
-            $msg = 'Please type DELETE to confirm account deletion';
+            $error_msg = 'Please type DELETE/' . $_SESSION['username'] . ' to confirm account deletion';
         }
     }
 }
@@ -160,9 +161,15 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             </a>
         </div>
         
-        <?php if($msg): ?>
+        <?php if(isset($msg) && $msg): ?>
             <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 mx-4 mt-4 animate-slide-up">
                 <p><i class="fas fa-check-circle mr-2"></i><?php echo $msg; ?></p>
+            </div>
+        <?php endif; ?>
+        
+        <?php if(isset($error_msg)): ?>
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 mx-4 mt-4 animate-slide-up">
+                <p><i class="fas fa-exclamation-circle mr-2"></i><?php echo $error_msg; ?></p>
             </div>
         <?php endif; ?>
         
@@ -252,7 +259,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="mb-3">
                                 <label class="block mb-2 font-medium text-gray-700">Delete Account</label>
                                 <p class="text-sm text-gray-600 mb-2">Once you delete your account, there is no going back. Please be certain.</p>
-                                <input type="text" name="confirm_delete" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400" placeholder="Type DELETE to confirm">
+                                <input type="text" name="confirm_delete" class="w-full px-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400" placeholder="Type DELETE/<?php echo $_SESSION['username']; ?> to confirm">
                             </div>
                             <button type="submit" name="delete_account" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium transition-transform hover:scale-105 shadow-md hover:shadow-lg transform">Delete Account</button>
                         </form>

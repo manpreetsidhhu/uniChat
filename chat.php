@@ -9,12 +9,10 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit();
 }
-
 // Fetch all users except the current user
 $users = get_users($conn);
 $current_user_id = $_SESSION['user_id']; // Current logged-in user's ID
 $current_username = $_SESSION['username']; // Current logged-in user's username
-
 // Handle logout functionality
 if (isset($_GET['logout'])) {
     // Destroy the session and redirect to the login page
@@ -22,12 +20,10 @@ if (isset($_GET['logout'])) {
     header("Location: index.php");
     exit();
 }
-
 // Initialize variables for selected user and messages
 $selected_user = null;
 $messages = [];
 $viewed_user = null;
-
 // Check if a user is selected for chat
 if (isset($_GET['user'])) {
     $receiver_id = (int)$_GET['user']; // Get the selected user's ID
@@ -37,43 +33,35 @@ if (isset($_GET['user'])) {
             break;
         }
     }
-
     // Fetch messages between the current user and the selected user
     if ($selected_user) {
         $messages = get_messages($current_user_id, $receiver_id, $conn);
     }
 }
-
 // Handle viewing user details
 if (isset($_GET['view_user'])) {
     $view_user_id = (int)$_GET['view_user'];
     $viewed_user = get_user($view_user_id, $conn);
 }
-
 // Handle sending a new message
 if (isset($_POST['send_message']) && $selected_user) {
     $message_text = trim($_POST['message']); // Get the message text
     $receiver_id = (int)$_POST['receiver_id']; // Get the receiver's ID
-
     if (!empty($message_text)) {
         // Send the message
         send_message($current_user_id, $receiver_id, $message_text, $conn);
-
         // If it's an AJAX request, just respond with success
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
             exit();
         }
-
         // Otherwise redirect to avoid form resubmission
         header("Location: chat.php?user=" . $receiver_id);
         exit();
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -251,7 +239,6 @@ if (isset($_POST['send_message']) && $selected_user) {
         }
     </style>
 </head>
-
 <body class="bg-gray-100 h-screen flex flex-col p-1">
     <header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md animate-fade-in rounded-lg">
         <div class="container mx-auto px-4 py-3">
@@ -295,7 +282,6 @@ if (isset($_POST['send_message']) && $selected_user) {
             </div>
         </div>
     </header>
-
     <div class="flex flex-1 overflow-hidden mt-1 mb-1 rounded-lg">
         <!-- User list sidebar -->
         <div class="w-1/4 bg-white shadow overflow-y-auto rounded-lg">
@@ -342,7 +328,6 @@ if (isset($_POST['send_message']) && $selected_user) {
                 </ul>
             </div>
         </div>
-
         <!-- Chat area -->
         <div class="flex-1 flex flex-col">
             <?php if ($selected_user): ?>
@@ -368,7 +353,6 @@ if (isset($_POST['send_message']) && $selected_user) {
                         <i class="fas fa-trash-alt mr-1"></i> Clear Chat
                     </button>
                 </div>
-
                 <div class="flex-1 p-4 px-5 overflow-y-auto bg-gray-50" id="messages-container">
                     <?php if (empty($messages)): ?>
                         <div class="text-center py-20 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.reload();" title="Click to refresh">
@@ -455,7 +439,6 @@ if (isset($_POST['send_message']) && $selected_user) {
             <?php endif; ?>
         </div>
     </div>
-
     <!-- User Details Modal -->
     <?php if ($viewed_user): ?>
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="userDetailsModal">
@@ -530,7 +513,6 @@ if (isset($_POST['send_message']) && $selected_user) {
         </div>
     </div>
     <?php endif; ?>
-
     <script>
         // Search functionality - always available regardless of chat selection
         document.getElementById('user-search').addEventListener('input', function() {
@@ -543,14 +525,12 @@ if (isset($_POST['send_message']) && $selected_user) {
                 }
             });
         });
-
         <?php if ($selected_user): ?>
         // Chat related functionality - only when a chat is selected
         const messagesContainer = document.getElementById('messages-container');
         if (messagesContainer) {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-
         const emojiButton = document.getElementById('emoji-button'),
             emojiPicker = document.getElementById('emoji-picker'),
             messageInput = document.getElementById('message-input');
@@ -564,7 +544,6 @@ if (isset($_POST['send_message']) && $selected_user) {
                 }
             });
         }
-
         if (document.querySelectorAll('.emoji-item').length > 0 && messageInput) {
             document.querySelectorAll('.emoji-item').forEach(emoji => {
                 emoji.addEventListener('click', () => {
@@ -574,11 +553,9 @@ if (isset($_POST['send_message']) && $selected_user) {
                 });
             });
         }
-
         // Extra options popup functionality
         const extraOptionsBtn = document.getElementById('extraOptions');
         const extraOptionsPopup = document.getElementById('extraOptionsPopup');
-
         if (extraOptionsBtn && extraOptionsPopup) {
             extraOptionsBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -592,11 +569,9 @@ if (isset($_POST['send_message']) && $selected_user) {
                 }
             });
         }
-
         // Location sending functionality
         const sendLocationBtn = document.getElementById('sendLocation');
         const messageForm = document.querySelector('form');
-
         if (sendLocationBtn && messageInput) {
             sendLocationBtn.addEventListener('click', () => {
                 if (extraOptionsPopup) {
@@ -644,18 +619,15 @@ if (isset($_POST['send_message']) && $selected_user) {
                 }
             });
         }
-
         // Define variables needed for chat functionality
         const currentUserId = <?php echo $current_user_id; ?>;
         const receiverId = <?php echo $selected_user['id']; ?>;
-
         // Handle form submission without page refresh
         if (messageForm) {
             messageForm.addEventListener('submit', function(e) {
                 // Do not prevent default form submission
                 // Let the form submit naturally to refresh the page
                 // This removes the AJAX functionality
-                
                 const messageText = messageInput.value.trim();
                 if (!messageText) {
                     e.preventDefault(); // Only prevent if empty message
@@ -663,7 +635,6 @@ if (isset($_POST['send_message']) && $selected_user) {
                 }
             });
         }
-
         // Clear Chat functionality
         const clearChatBtn = document.getElementById('clearChatBtn');
         if (clearChatBtn) {
@@ -675,23 +646,19 @@ if (isset($_POST['send_message']) && $selected_user) {
                 }
             });
         }
-
         // Check for new messages
         let messageCount = <?php echo count($messages); ?>;
-
         function checkNewMessages() {
             fetch('chat.php?user=' + receiverId)
                 .then(response => response.text())
                 .then(html => {
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
-
                     // Get all messages from the returned HTML
                     const newMsgContainer = doc.getElementById('messages-container');
                     if (newMsgContainer) {
                         // Count messages in fetched content
                         const newMessages = newMsgContainer.querySelectorAll('.message-bubble');
-
                         // If there are new messages, update the container
                         if (newMessages.length > messageCount) {
                             messagesContainer.innerHTML = newMsgContainer.innerHTML;
@@ -701,16 +668,13 @@ if (isset($_POST['send_message']) && $selected_user) {
                     }
                 });
         }
-
         // Check for new messages every second
         setInterval(checkNewMessages, 1000);
         <?php endif; ?>
     </script>
-
     <!-- Footer -->
     <footer class="text-center py-2 text-gray-500 text-xs border-t border-gray-200 bg-white rounded-b-lg mx-1 mb-1">
         © 2025 uniChat
     </footer>
 </body>
-
 </html>

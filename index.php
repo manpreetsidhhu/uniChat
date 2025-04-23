@@ -13,13 +13,39 @@ $error = '';
 // Handle user registration
 if (isset($_POST['register'])) {
     // Sanitize and retrieve form inputs
-    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $username = trim(mysqli_real_escape_string($conn, $_POST['username']));
     $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
     
     // Check if fields are empty
-    if (empty($username) || empty($password)) {
+    if (empty($username) || empty($password) || empty($confirm_password)) {
         $error = "Please fill all fields";
-    } else {
+    } 
+    // Check if username contains spaces
+    elseif (strpos($username, ' ') !== false) {
+        $error = "Username cannot contain spaces";
+    }
+    // Check if passwords match
+    elseif ($password !== $confirm_password) {
+        $error = "Passwords do not match";
+    }
+    // Password validation
+    elseif (strlen($password) < 6) {
+        $error = "Password must be at least 6 characters long";
+    }
+    elseif (!preg_match('/[A-Z]/', $password)) {
+        $error = "Password must contain at least one uppercase letter";
+    }
+    elseif (!preg_match('/[a-z]/', $password)) {
+        $error = "Password must contain at least one lowercase letter";
+    }
+    elseif (!preg_match('/[0-9]/', $password)) {
+        $error = "Password must contain at least one number";
+    }
+    elseif (!preg_match('/[^A-Za-z0-9]/', $password)) {
+        $error = "Password must contain at least one special character";
+    }
+    else {
         // Attempt to register the user
         if (register_user($username, $password, $conn)) {
             $success = "Registration successful! Please login.";
@@ -32,7 +58,7 @@ if (isset($_POST['register'])) {
 // Handle user login
 if (isset($_POST['login'])) {
     // Sanitize and retrieve form inputs
-    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $username = trim(mysqli_real_escape_string($conn, $_POST['username']));
     $password = $_POST['password'];
     
     // Check if fields are empty
@@ -122,15 +148,17 @@ if (isset($_SESSION['user_id'])) {
             
             <div class="p-6">
                 <div id="loginForm">
-                    <form method="post" class="space-y-4">
+                    <form method="post" class="space-y-4" id="loginFormElement">
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fas fa-user"></i></span>
-                            <input type="text" name="username" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-indigo-300" placeholder="Username">
+                            <input type="text" name="username" id="login-username" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-indigo-300" placeholder="Username">
+                            <div class="text-red-500 text-xs mt-1 hidden" id="login-username-error"></div>
                         </div>
                         
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fas fa-lock"></i></span>
-                            <input type="password" name="password" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-indigo-300" placeholder="Password">
+                            <input type="password" name="password" id="login-password" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-indigo-300" placeholder="Password">
+                            <div class="text-red-500 text-xs mt-1 hidden" id="login-password-error"></div>
                         </div>
                         
                         <button type="submit" name="login" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium flex items-center justify-center">
@@ -140,20 +168,34 @@ if (isset($_SESSION['user_id'])) {
                 </div>
                 
                 <div id="registerForm" class="hidden">
-                    <form method="post" class="space-y-4">
+                    <form method="post" class="space-y-4" id="registerFormElement">
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fas fa-user"></i></span>
-                            <input type="text" name="username" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-indigo-300" placeholder="Choose a username">
+                            <input type="text" name="username" id="register-username" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-indigo-300" placeholder="Choose a username">
+                            <div class="text-red-500 text-xs mt-1 hidden" id="register-username-error"></div>
                         </div>
                         
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fas fa-lock"></i></span>
-                            <input required type="password" name="password" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-indigo-300" placeholder="Create a password">
+                            <input required type="password" name="password" id="register-password" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-indigo-300" placeholder="Create a password">
+                            <div class="text-red-500 text-xs mt-1 hidden" id="register-password-error"></div>
                         </div>
                         
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"><i class="fas fa-check-circle"></i></span>
-                            <input required type="password" name="confirm_password" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-indigo-300" placeholder="Confirm password">
+                            <input required type="password" name="confirm_password" id="register-confirm-password" class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:ring-2 focus:ring-indigo-300" placeholder="Confirm password">
+                            <div class="text-red-500 text-xs mt-1 hidden" id="register-password-match-error"></div>
+                        </div>
+                        
+                        <div class="bg-blue-50 p-3 rounded-lg text-xs text-blue-800 mb-2">
+                            <p class="font-medium">Password must contain:</p>
+                            <ul class="list-disc pl-4 mt-1 space-y-1">
+                                <li id="length-check">At least 6 characters</li>
+                                <li id="uppercase-check">At least 1 uppercase letter</li>
+                                <li id="lowercase-check">At least 1 lowercase letter</li>
+                                <li id="number-check">At least 1 number</li>
+                                <li id="special-check">At least 1 special character</li>
+                            </ul>
                         </div>
                         
                         <button type="submit" name="register" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium flex items-center justify-center">
@@ -181,6 +223,111 @@ if (isset($_SESSION['user_id'])) {
         }
         
         tabs.login.className = 'block py-3 font-medium text-indigo-600 border-b-2 border-indigo-600';
+        
+        // Form validation functions
+        function validateUsername(username, errorElement) {
+            if (!username.trim()) {
+                errorElement.textContent = "Username cannot be empty";
+                errorElement.classList.remove('hidden');
+                return false;
+            } else if (username.includes(' ')) {
+                errorElement.textContent = "Username cannot contain spaces";
+                errorElement.classList.remove('hidden');
+                return false;
+            }
+            errorElement.classList.add('hidden');
+            return true;
+        }
+        
+        function validatePassword(password, errorElement) {
+            if (!password) {
+                errorElement.textContent = "Password cannot be empty";
+                errorElement.classList.remove('hidden');
+                return false;
+            } else if (password.length < 6) {
+                errorElement.textContent = "Password must be at least 6 characters long";
+                errorElement.classList.remove('hidden');
+                return false;
+            } else if (!/[A-Z]/.test(password)) {
+                errorElement.textContent = "Password must contain at least one uppercase letter";
+                errorElement.classList.remove('hidden');
+                return false;
+            } else if (!/[a-z]/.test(password)) {
+                errorElement.textContent = "Password must contain at least one lowercase letter";
+                errorElement.classList.remove('hidden');
+                return false;
+            } else if (!/[0-9]/.test(password)) {
+                errorElement.textContent = "Password must contain at least one number";
+                errorElement.classList.remove('hidden');
+                return false;
+            } else if (!/[^A-Za-z0-9]/.test(password)) {
+                errorElement.textContent = "Password must contain at least one special character";
+                errorElement.classList.remove('hidden');
+                return false;
+            }
+            errorElement.classList.add('hidden');
+            return true;
+        }
+        
+        function passwordsMatch(password, confirmPassword, errorElement) {
+            if (password !== confirmPassword) {
+                errorElement.textContent = "Passwords do not match";
+                errorElement.classList.remove('hidden');
+                return false;
+            }
+            errorElement.classList.add('hidden');
+            return true;
+        }
+        
+        // Live password strength indicator
+        const registerPassword = document.getElementById('register-password');
+        const lengthCheck = document.getElementById('length-check');
+        const uppercaseCheck = document.getElementById('uppercase-check');
+        const lowercaseCheck = document.getElementById('lowercase-check');
+        const numberCheck = document.getElementById('number-check');
+        const specialCheck = document.getElementById('special-check');
+        
+        registerPassword.addEventListener('input', function() {
+            const password = this.value;
+            
+            // Update validation indicators
+            lengthCheck.classList.toggle('text-green-600', password.length >= 6);
+            uppercaseCheck.classList.toggle('text-green-600', /[A-Z]/.test(password));
+            lowercaseCheck.classList.toggle('text-green-600', /[a-z]/.test(password));
+            numberCheck.classList.toggle('text-green-600', /[0-9]/.test(password));
+            specialCheck.classList.toggle('text-green-600', /[^A-Za-z0-9]/.test(password));
+        });
+        
+        // Form validation
+        document.getElementById('loginFormElement').addEventListener('submit', function(e) {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            const usernameValid = validateUsername(username, document.getElementById('login-username-error'));
+            const passwordValid = password.trim() !== ''; // Simple check for login
+            
+            if (!usernameValid || !passwordValid) {
+                e.preventDefault();
+                if (!passwordValid) {
+                    document.getElementById('login-password-error').textContent = "Password cannot be empty";
+                    document.getElementById('login-password-error').classList.remove('hidden');
+                }
+            }
+        });
+        
+        document.getElementById('registerFormElement').addEventListener('submit', function(e) {
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+            
+            const usernameValid = validateUsername(username, document.getElementById('register-username-error'));
+            const passwordValid = validatePassword(password, document.getElementById('register-password-error'));
+            const passwordsMatchValid = passwordsMatch(password, confirmPassword, document.getElementById('register-password-match-error'));
+            
+            if (!usernameValid || !passwordValid || !passwordsMatchValid) {
+                e.preventDefault();
+            }
+        });
     </script>
 </body>
 </html>
